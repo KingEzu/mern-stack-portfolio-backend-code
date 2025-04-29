@@ -46,7 +46,7 @@ export const subscribeToNewsletter = catchAsyncErrors(async (req, res, next) => 
   }
 
   // Email verification link
-  const verificationLink = ${process.env.FRONTEND_URL}/verify-email?token=${verificationToken};
+  const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
 
   // Create a transport for nodemailer
   const transporter = nodemailer.createTransport({
@@ -62,11 +62,11 @@ export const subscribeToNewsletter = catchAsyncErrors(async (req, res, next) => 
     from: process.env.SMTP_MALI,
     to: email,
     subject: 'Email Verification for Subscription',
-    html: 
+    html: `
       <h1>Thank you for subscribing!</h1>
       <p>Please verify your email address by clicking the link below:</p>
       <a href="${verificationLink}">Verify Email</a>
-    ,
+    `,
   };
 
   // Send the email
