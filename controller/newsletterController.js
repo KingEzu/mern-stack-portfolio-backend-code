@@ -21,19 +21,19 @@ export const subscribeToNewsletter = catchAsyncErrors(async (req, res, next) => 
     return res.status(400).json({ success: false, message: "Email is required" });
   }
 
-  // Check if the email is already subscribed
+  // Check if the email is already subscribed and verified
   let subscriber = await Subscriber.findOne({ email });
 
-  // If subscriber is found and already verified, return an error
   if (subscriber && subscriber.verified) {
-    return res.status(400).json({ success: false, message: "Email already verified or already subscribed." });
+    return res.status(400).json({ success: false, message: "Already subscribed" });
   }
 
   // Generate verification token
   const verificationToken = crypto.randomBytes(32).toString("hex");
 
-  // If the subscriber does not exist, create a new one
+  // Create or update the subscriber only if the subscription is successful
   if (!subscriber) {
+    // Create new subscriber only if not found
     subscriber = new Subscriber({
       email,
       verificationToken,
@@ -46,7 +46,7 @@ export const subscribeToNewsletter = catchAsyncErrors(async (req, res, next) => 
   }
 
   // Email verification link
-  const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
+  const verificationLink = ${process.env.FRONTEND_URL}/verify-email?token=${verificationToken};
 
   // Create a transport for nodemailer
   const transporter = nodemailer.createTransport({
@@ -62,14 +62,14 @@ export const subscribeToNewsletter = catchAsyncErrors(async (req, res, next) => 
     from: process.env.SMTP_MALI,
     to: email,
     subject: 'Email Verification for Subscription',
-    html: `
+    html: 
       <h1>Thank you for subscribing!</h1>
       <p>Please verify your email address by clicking the link below:</p>
       <a href="${verificationLink}">Verify Email</a>
-    `,
+    ,
   };
 
-  // Send the email only if it's a valid subscriber and the email hasn't been sent yet
+  // Send the email
   try {
     // Send the email first, only then save the subscriber
     await transporter.sendMail(mailOptions);
@@ -89,7 +89,6 @@ export const subscribeToNewsletter = catchAsyncErrors(async (req, res, next) => 
     });
   }
 });
-
 // Unsubscribe from Newsletter
 export const unsubscribeFromNewsletter = catchAsyncErrors(async (req, res, next) => {
   const { id } = req.params; // Get ID from request parameters
