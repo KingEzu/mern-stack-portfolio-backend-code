@@ -21,19 +21,19 @@ export const subscribeToNewsletter = catchAsyncErrors(async (req, res, next) => 
     return res.status(400).json({ success: false, message: "Email is required" });
   }
 
-  // Check if the email is already subscribed and verified
+  // Check if the email is already subscribed
   let subscriber = await Subscriber.findOne({ email });
 
+  // If subscriber is found and already verified, return an error
   if (subscriber && subscriber.verified) {
-    return res.status(400).json({ success: false, message: "Already subscribed" });
+    return res.status(400).json({ success: false, message: "Email already verified or already subscribed." });
   }
 
   // Generate verification token
   const verificationToken = crypto.randomBytes(32).toString("hex");
 
-  // Create or update the subscriber only if the subscription is successful
+  // If the subscriber does not exist, create a new one
   if (!subscriber) {
-    // Create new subscriber only if not found
     subscriber = new Subscriber({
       email,
       verificationToken,
@@ -69,13 +69,9 @@ export const subscribeToNewsletter = catchAsyncErrors(async (req, res, next) => 
     `,
   };
 
-  // Prevent sending email if subscriber already exists and is unverified
-  if (subscriber && !subscriber.verified) {
-    return res.status(400).json({ success: false, message: "Verification email already sent. Please check your inbox." });
-  }
-
-  // Send the email first, only then save the subscriber
+  // Send the email only if it's a valid subscriber and the email hasn't been sent yet
   try {
+    // Send the email first, only then save the subscriber
     await transporter.sendMail(mailOptions);
 
     // After successfully sending the email, save the subscriber to the database
@@ -87,15 +83,6 @@ export const subscribeToNewsletter = catchAsyncErrors(async (req, res, next) => 
     });
   } catch (error) {
     console.error("Error sending email:", error);
-
-    // If email delivery fails, do not save the subscriber to the DB
-    if (error.responseCode === 550) {
-      return res.status(400).json({
-        success: false,
-        message: "Email address is invalid or unreachable. Please check the email address and try again.",
-      });
-    }
-
     return res.status(500).json({
       success: false,
       message: "Error sending verification email. Please try again.",
